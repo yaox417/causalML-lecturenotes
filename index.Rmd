@@ -6,6 +6,8 @@ output:
   bookdown::gitbook: default
 ---
 
-## NEU Khoury College CS 7290: Summer 2019
+# About
+
+**Northeastern University Khoury College CS 7290: Summer 2019**
 
 These are lecture notes for an ongoing [course](https://github.com/robertness/causalML) on causal inference and modeling in machine learning, taught by Dr. Robert O. Ness.  These notes are a work in progress, created as the course progresses.  They are created by the instructor, the course TA's [Kaushal Paneri](https://www.linkedin.com/in/kaushalpaneri/) and Sicheng Hao, and the Summer 2019 students of this course.

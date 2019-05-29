@@ -1,0 +1,94 @@
+---
+output: html_document
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.path="fig/")
+```
+# Introduction to Interventions
+
+## Recap: DAGs as a grammar for reasoning about a joint distribution
+
+* [Review of generative modeling definitions][Recap: Causal models as generative models]
+* DAGs provided a graph theory-based grammar for reasoning about a joint distribution
+* They tell you what is dependent and what is conditionally independent
+* Causal Bayesian networks follow the Markov property.  One way of expressing this is the local Markov property (slides)
+* Each factor in the local Markov property factorization is represented as some conditional probability distribution.  If we follow the ordering of the DAG, we get the algorithm for generating the data.
+
+## Ladder of causality (slides)
+
+* Associative:
+  * Broad class of statistically learned models (discriminiative and generative)
+  * Includes deep learning (unless you tweak it)
+* Intervention
+  * Why associative models can't do this -- changing the joint
+  * Causal Bayes nets
+  * Tradition PPL program
+* Counterfactual
+  * Causal Bayesian networks can't do this
+  * Structural causal models -- can be implemented in a PPL
+
+## Interventions and implications to prediction
+* Definition in terms of probability distribution
+* Implications to prediction: Predicting the weather vs predicting the sales
+* Perfect/ideal intervention - artificially assigning the value of a random variable
+* Perfect intervention represented as a node in a Causal Bayes Net
+  * Represented as variable with no causes and two states (on/off).
+  * Outcome is deterministic, irregardless of other parents
+    * Can be awkward to represent in terms of conditional probability
+    
+    | I | X           | Y | Prob |
+    |---|-------------|---|------|
+    | 0 | 0           | 0 | .8   |
+    | 0 | 0           | 1 | .2   |
+    | 0 | 1           | 0 | .1   |
+    | 0 | 1           | 1 | .9   |
+    | 1 | $\forall x$ | 1 | 1.0  | 
+    
+  * Can be more awkward for continuous random variables
+    
+    $$Y \sim \left\{\begin{matrix}
+    \text{Normal}(\beta X + \alpha, 1) & \text{I} = 0 \\ 
+    \text{Dirac}(y)) & \text{I} = 1 
+    \end{matrix}\right.$$
+    
+    * In a probabilistic program :
+    
+    ```
+    y = 0 # or some other intervention value
+    def program(I):
+      X ~ Normal(0, 1)
+      if I:
+        Y ~ Normal(beta X + alpha, 1)
+      else:
+        Y ~ Dirac(y) # or just `Y = y`
+    ```
+* Perfect interventions as graph mutilation -- "mutilate" the DAG by removing incoming edges the intervened upon variable
+  * implemented in bnlearn (slides)
+* Equivalence class as graph manipulation
+  * Finding the PDAG of the mutilated class
+  
+* Other kinds of interventions
+  * Soft interventions
+    * Changing or replacing the distribution, but the outcome is not deterministic
+    * Change of slope example
+    * Not implemented in Pyro (here's what syntax might look like)
+  * Fat-fingered interventions (board)
+* Randomization as intervention -- breaking influence of latent confounders
+  * Probabilistic program for randomization using metaprogramming
+* Interventions as Pearl's Do-calculus 
+  * $p(y|do(x))$: What is the distribution of Y if I were to set the value of X to x. 
+  * Generally different from $ p(y|x)$
+  * Notation: $P^{\text{do}(X = x)}$ vs $P^{(X = x)}$
+* `do` operator as metaprogramming Pyro
+* Advantages of the `do`-operater
+  * Consider that it allows us to reason about interventions, when it is not feasable to do the intervention
+  * That is why they are called "perfect" or "ideal"
+  * Powerful -- means we can answer causal questions without running an experiment
+* Controversy about the `do`-operator
+  * What does it mean to intervene on 'obesity'?  What does it mean to intervene on race? (slides)
+  
+## Structural Causal Models
+  
+  
