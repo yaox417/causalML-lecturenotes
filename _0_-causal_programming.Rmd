@@ -1,0 +1,27 @@
+---
+output: html_document
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.path="fig/")
+```
+
+# Foundations for causal programming
+
+* The core objective of this course is to learn how to build causal assumptions into generative machine learning models.
+* We've been using probabilistic programming build generative models.
+* Problem: we've seen that probabilistic programming does not need to be bound to the DAG.  How do we build causal models when we are outside of DAG land
+
+## Infinite sets of variables
+
+* One of our DAG-based modeling assumptions is causal minimality -- which assumes local Markov property.
+* How do you ahve local Markov property with infinite sets of variables?
+* Perhaps in each execution of the program we get a finite instantiation of the infinite set of possible variables.
+* If it is possible to number the variables in order of causal dependency, then it suffices to specify the product expression for each finite prefix of this numbering.
+* However, if a variable has infinitely many parents, then we can't get an ordering because we would spend forever on forever on X’s parents and never reach X.
+
+## Introduction of cycles
+
+* Again, we lose the directed local Markov property
+* It is no longer sufficient to assert that X is independent of its non-descendants in the ?? syntax tree given its parents, the standard directed local Markov property would yield no assertions of conditional independence
