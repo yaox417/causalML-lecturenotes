@@ -13,6 +13,7 @@ TODO:
 * http://web.stanford.edu/~icard/ac2017.pdf
 * probmodels
 * https://cocolab.stanford.edu/papers/GerstenbergEtAl2015-Cogsci.pdf
+* https://export.arxiv.org/pdf/1805.02859
 
 
 # Foundations for causal programming
