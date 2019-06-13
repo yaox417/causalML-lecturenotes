@@ -11,6 +11,15 @@ Todo:
 On Open-Universe Causal Reasoning
 Duligur Ibeling, Thomas Icard 
 
+TODO:
+
+* https://dspace.mit.edu/bitstream/handle/1721.1/100174/CBMM-Memo-010.pdf;sequence=1
+* http://web.stanford.edu/~icard/ac2017.pdf
+* probmodels
+* https://cocolab.stanford.edu/papers/GerstenbergEtAl2015-Cogsci.pdf
+* https://export.arxiv.org/pdf/1805.02859
+
+
 # Foundations for causal programming
 
 * The core objective of this course is to learn how to build causal assumptions into generative machine learning models.
