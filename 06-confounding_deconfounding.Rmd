@@ -1,0 +1,142 @@
+---
+output: html_document
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.path="fig/")
+```
+
+# Calculating intervention distributions by covariate adjustment
+
+## Review of causal sufficiency and interventions
+* Global Markov property
+* Causal faithfulness
+* Causal minimality
+* Faithfulness implies causal minimality
+
+## Review of intervention
+* Intervention is an artificial manipulation of the DAG.
+* Interventions change the joint distribution such that the intervened variable no longer correlates with its causes.
+* Randomized experiments are a type of intervention.
+* Ladder of causality -- How can we predict interventions?
+  * Associational models don't have an a way of calculating how the joint distribution changes under intervention.
+  * Best you can do is actually perform interventions and include the intervention data in your training data.
+  * Causal models allows us to predict the effect of an intervention.
+* Why would we want to predict an intervention?
+  * If a randomized experiment is a type of intervention, then you might ask why we would want to predict the outcome of a randomized experiment.
+  * Randomized experiment may be costly in terms of time and resources.  They may be impossible or unethical to run.
+  * But wait, why do we run randomized experiments again?
+
+## Intuition about experimental effects and confounding
+* Confounding example 1
+  * I want to know the effect someone screaming "fire" in a movie theater has on making people run for the fire exit.
+  * But when people usually scream fire, there is usually a fire.  When people run to the exit, are they responding to the scream or to the fire?
+  * So here we are interested in a direct relationship between (scream and fire), and are having troubling seperating it from indirect relationship between screaming and the actual presence of a fire, as well as people running and the actual effect of a fire.
+* Confounding example 2
+  * Running an A/B test.  So on Monday morning, you send all the users to A.  On Monday evening, you send all the users to B.
+  * You have asked a question of the universe: What the difference is between A and B under the conditions of the experiment?
+  * Key word here is "difference"
+      * $$ \begin{align} 
+      & P(R = 1 | T = a) - P(R = 1 | T = b) \nonumber\\
+      =& \sum_{z}P(R = 1 | T = a, Z=z)P(T=a|Z=z)P(Z=z) - \sum_{z}P(R = 1 | T = b, Z=z)P(T=b|Z=z)P(Z=z) \nonumber
+      \end{align} $$
+      * These probabilities vary depending on what level of z we are looking at.
+  * We know what is wrong with our experiment -- randomization.  How does it fix this problem?  Can you explain it without graphs?
+* Language problem
+  * Statistics cannot define the term "confounding", need a causal grammar.
+  * Similarly, interpret the differences between treatment populations.
+
+## Graph-based
+* Confounding bias occurs when a variable influences both who is selected for the treatment and the outcome of an experiment.
+* Sometimes they are known, sometimes they are latent.
+* Contrast this with a latent variable model where we are typically trying to infer the state of the latent.
+    * What about if we want to predict the latent, but there is another confounder?
+    * Topic model example
+* What does it mean to "control for something"? In terms of tables?
+
+## Calculating intervention distributions by covariate adjustment
+
+* We have a causal model $\mathbb{M}$ that entails the joint distribution $\mathbb{P}$.  Our model is a machine that gives us joint, conditional, or marginal probability of any outcome (though we may need an inference algorithm to compute the probability).
+* Recall local Markov property:
+$$p^{\mathbb{M}}(x_1, ..x_d)= \prod_{j=1}^{d}p^{\mathbb{M}}(x_j|x_{pa(j)})$$
+Our causal model's DAG gives use this factorization.  
+* The intervention question: *if an intervention changes joint distribution, how can we calculate the results of an intervention without actually having to do the intervention?*
+* Covariate adjustment: calculating the results of interventions without do-calculus (graph mutilation).  Motivation?
+    1. The Do-calculus is a tool.  We better understand the power of a tool and how it works if we understand exactly what we can accomplish without the tool.
+    2. Much of the causal inference community doesn't use do-calculus, but they do use covariate adjustment.
+    3. Will give us a better understanding of confounding -- we said a RCT is a c 
+* Given a model entailing $\mathbb{M}$, if we apply an intervention to the model and acquire $\mathbb{\tilde{M}}$, then $$\pi_{\mathbb{M}}(x_j | x_{\text{pa(j)}}) = \pi_{\mathbb{M}}(x_j | x_{\text{pa(j)}})$$
+
+## Truncated formula AKA g-formula
+
+### Invariance property of interventions 
+
+Assume we have a model $\mathbb{M}$, that factorizes according to some DAG.
+Then by the local Markov property:
+
+$p^{\mathbb{M}}(x_1, ..x_d) &= \prod_{j}^{d}p^{\mathbb{M}}(x_j|x_{pa(j)})$, where $x_{pa(j)}$ is a vector of values for the parents of $X_j$ in the DAG.
+
+So we know the values for each factor $p^{\mathbb{M}}(x_j|x_{pa(j)})$ ( -- that's part of what the model encodes.
+Again, what we don't know is what the new distribution under intervention is going to be.
+
+Let $\mathbb{\tilde{M}}$ be the mutated (mutilated) model we get after we apply a soft intervention $do(X_k := \tilde{N})$, where $\tilde{N}$ has a probability density function $\pi$.  Then according to the local Markov property.
+
+$$
+\begin{align} 
+p^{\mathbb{\tilde{M}}}(x_1, ..x_d) &= p^{\mathbb{M}; do(X_k = \tilde{N})}(x_k) \prod_{j\neq k}^{d}p^{\mathbb{M}}(x_j|x_{pa(j)}) \nonumber \\
+&= \pi(x_k) \prod_{j\neq k}^{d}p^{\mathbb{M}}(x_j|x_{pa(j)}) \nonumber
+\end{align}
+$$
+
+The interventions changes only the factor $p^{\mathbb{M}}(x_k|x_{pa(k))}$ -- it becomes  $\pi(x_k) = p^{\mathbb{M}; do(X_k = \tilde{N})}(x_j)$, which no longer depends on the parents $x_{pa(j)}$.
+The key thing here is that, all of the factors from $\mathbb{M}$ are the same in $\mathbb{\tilde{N}}$.
+
+In the special case of a hard intervention, this simplifies to 
+$$
+\begin{align} 
+p^{\mathbb{M}; \text{do}(X_k = a)}(x_1, ..x_d) = \left\{\begin{matrix}
+\prod_{j\neq k}^{d}p^{\mathbb{M}}(x_j|x_{pa(j)}) & \text{if} X_k = a \\ 
+0 & \text{otherwise} 
+\end{matrix}\right.  \nonumber
+\end{align}
+$$
+
+### Conditioning and `do` are the same for variables without parents
+
+Consider what would happen if $x_k$ had no parents?
+
+$$
+\begin{align} 
+p^{\mathbb{M}}(x_1, ..x_d|X_k =a) &= \frac{\prod_{j}^{d}p^{\mathbb{M}}(x_j|x_{pa(j)}) }{P^{\mathbb{M}}(x_k=a)}\nonumber \\
+&= \frac{p^{\mathbb{M}}(x_k|x_{pa(k)}) \prod_{j\neq k}^{d}p^{\mathbb{M}}(x_j|x_{pa(j)})}{P^{\mathbb{M}}(X_k=a)} \nonumber \\
+&= p^{\mathbb{M}}(x_k) \prod_{j \neq k}^{d}p^{\mathbb{M}}(x_j|x_{pa(j)}) \nonumber \\
+&= \left\{\begin{matrix}
+\prod_{j\neq k}^{d}p^{\mathbb{M}}(x_j|x_{pa(j)}) & \text{if} X_k = a \\ 
+0 & \text{otherwise} \\
+\end{matrix}\right. \nonumber \\
+&= p^{\mathbb{M}; \text{do}(X_k = a)}(x_1, ..x_d)
+\end{align}
+$$
+
+## Valid adjustment sets 
+* Valid adjustment sets, and the problem of over controlling.
+    * Even amongst statisticians, knowing what to control for, or what confounding is, has been a problem.
+    * This motivates all the work we are doing in parsing DAGs.
+    * Parsing [Ezra Klein](https://www.vox.com/2014/12/1/7311417/race-law-controls)
+    * TODO Gender wage gap example. "The question to ask about the various statistical controls that can be applied to shrink the gender gap is what are they actually telling us... The answer, I think, is that it's telling how the wage gap works."  One should not control for things that are part of the causal mechanism.
+
+$p^{\mathbb{M}; X =x}(y)&= \sum_{z} p^{\mathbb{M}; X =x}(y|x, z)p^{\mathbb{M}}(z)$
+
+
+
+* Parent adjustment
+* Backdoor criterion
+* Toward neccessity
+* Front door
+  * If we do not observe the latent, we can't use the back-door, but we can:
+  * $p^{\mathbb{M}; \text{do}(X=x)}(y)= \sum_z p^{\mathbb{M};X=x}(z) \sum_{\tilde{x}} p^{\mathbb{M};X=\tilde{x}Z=z}(y) p^{\mathbb{M}}(\tilde{x})$
+
+
+
+

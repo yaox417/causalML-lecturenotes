@@ -1,0 +1,16 @@
+---
+title: 
+author: "Robert Ness"
+output: html_document
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Covariate adjustment example: Continuous adjustment
+
+Since we are talking differences, what might this look like in the continuous case? $\frac{d}{dx}E^{\mathbb{M};do(X:=x)}(Y)$
+  * Linear case -- Z in valid adjustment set
+  * Nonlinear case: Monte Carlo Sampler.  Recall that. $\frac{d f(x)}{dx} = \lim_{\delta \rightarrow 0} \frac{f(x + \delta) -f(x)}{\delta}$
+

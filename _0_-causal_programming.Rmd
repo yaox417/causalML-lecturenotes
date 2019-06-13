@@ -6,6 +6,10 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(fig.path="fig/")
 ```
+Todo:
+* causal programs: https://web.stanford.edu/~icard/ac2017.pdf
+On Open-Universe Causal Reasoning
+Duligur Ibeling, Thomas Icard 
 
 # Foundations for causal programming
 
