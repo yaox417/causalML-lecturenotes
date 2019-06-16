@@ -1,63 +1,87 @@
----
-output: html_document
----
+# Reasoning about DAGs
 
-```{r include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_chunk$set(fig.path="fig/")
-```
-
-# Reasoning on DAGs
 
 ## Recap: Causal models as generative models
 
 Our goal is to understand causal modeling within the context of generative machine learning. We just examined one generative machine learning framework called Bayesian networks (BNs) and how we can use BNs as causal models.
 
-### Ladder of causality (slides)
+### Ladder of causality
 
-* Associative:
-  * Broad class of statistically learned models (discriminiative and generative)
-  * Includes deep learning (unless you tweak it)
-* Intervention
-  * Why associative models can't do this -- changing the joint
-  * Causal Bayes nets
-  * Tradition PPL program
-* Counterfactual
-  * Causal Bayesian networks can't do this
-  * Structural causal models -- can be implemented in a PPL
+There are three levels of causal inference and we call it the ladder of causality.
+
+* **Association (Seeing)**
+    Two variables are associative if observing one changes the probability of observing the other. Most of the machine learning models are good at finding an association between variables or features. Deep models are capable to find high-dimensional non-linear correlations.
+
+    For Example, What does a symptom tell me about a disease?
+    
+   > Association does not imply causality. In the above example, it might be that both the symptom and the disease both are caused by hidden variable(confounder) lifestyle.  
+
+* **Intervention (Doing)**
+    In intervention, we override the normal causal structure, forcing a variable to take a value it might not have taken if the system were left alone. 
+
+    For Example, If I take aspirin, will my headache be cured?
+
+    note that this distribution is difference than $P(cured\mid aspirin)$ because there might be a confounder cause. Interventions can be performed on any causal Bayesian networks.
+    
+    Here are a few examples of how intervention can be important for a machine learning project.
+    * **Online Learning:** Suppose owner of an online website finds out from his machine learning team that the predicted revenue for next month is lower than usual. He decides to run a Google Ad campaign to raise the revenue. By this way, he changes the process of how the revenue is driven. This is an intervention. If the machine learning team take this data to train their models for the next month, there will be an interference if they don't account for the effect of ad campaign.
+    * **Anomaly detection:** Suppose a finance company is trying to build models to predict fraud. Based on the models, they reject the transactions that looks fraud. Now, if you retrain the model, the target becomes only the transaction that could outsmart your previous model. So, instead of conditioning on fraud, you should condition on the transactions that are fraud and able to outsmart the previous model. 
+
+    In both the cases, when some action is taken based on the outcome of the model, the new data is generated from a different distribution than the previous data generation process. Thus, it becomes a never ending loop of model update if we don't consider the intervention.
+
+* **Counterfactuals (Imagining):**
+    Counterfactual reason about hypothetical situations, things that could happen if something was changed in past.
+    
+    The canonical interpretation of causality comes from Physics, where we can apply laws like gravitation and optics laws and predict the next state given the current state. But as human, we have a representation in our mind that can simulate and predict multiple scenarios had the initial conditions been different. For example, observing a pile of blocks at the edge of table, we can infer in which direction it will fall.
+        
+    If you want to build strong AI systems that reason like we reason, then you should be thinking about how to encode counterfactual reasoning in the system.
+    
+    Causal Bayesian networks allows us to build interventions where Structural Causal Models allows us to model both, interventions and counterfactuals.
+    
 
 ### Some definitions and notation
 
-* Joint probability distribution: $P_{\mathbb{X}}$
-* Density $P_{\mathbb{X}=x} = \pi(x_1, ..., x_d)$
-* Bivariate $P_{Z, Y}$, marginal $P_{Z}$, conditional $P_{Z|Y}$
-* Generative model $\mathbb{M}$ is a machine learning model that "entails" joint distribution, either explicitly or implicitly
-* We denote the joint probability distribution "entailed" by a generative model as $P_{\mathbb{X}}^{\mathbb{M}}$
-* Directed acyclic graph DAG $\mathbb(G) = (V, E)$, where E is a set of directed edges.
-* Parents in the DAG: Parents of $X_j$ in the DAG $\mathbb(G)$ is denoted $\text{pa}_j^{\mathbb{G}}$
-* A Bayesian network is a generative model that entails a joint distribution that factorizes over a DAG.
-* A causal generative model is a generative model of a causal mechanism.
-* A causal Bayesian networks is a causal generative model that is simply a Bayesian network where the direction of edges in the DAG represent causality.
-* Probabilistic programming:  Writing generative models as program.  Usually done with a framework that provides a DSL and abstractions for inference
-* "Causal program": Let's call this a probabilistic program that   As with a causal Bayesian network, you can write your program in a way that orders the steps of its execution according to cause and effect.
+This is the notation we will use throughout the course.
+
+* We denote bold capital letters to denote a set of random variables. We use capital letters to denote a random variable. Let $\mathbf{X}$ be a set of random variables $$\mathbf{X} = 	\{X_1, ..., X_d\}$$
+* Joint probability distribution: $$P_{\mathbf{X}} = P(X_1, ..., X_d)$$
+* We use small letters to denote value of the variable or vector of random variables. So, in this case, let $x$ be $$ (\mathbf{X}=x) := \{X_1 =x_1, X_2=x_2, ..., X_d=x_d\}$$
+* We denote density at $\mathbf{X}=x$ as, $$P_{\mathbf{X}=x} = \pi(x_1, ..., x_d)$$
+* Let $P_{X_i}$ be the marginal over $X_i$, and $P_{X_i\mid X_j}$ be the conditional density.
+* Let $\mathbb{M}$ be the generative model that entails joint distribution, either explicitly or implicitly.
+* We denote the joint probability distribution "entailed" by a generative model as $P_{\mathbf{X}}^{\mathbb{M}}$
+* Let $\mathbb{G} = \{V, E\}$ be the directed acyclic graph.
+* Let the parents of $X_j$ in the DAG $\mathbb(G)$ be $Pa_j^{\mathbb{G}}$
+
+
+Below are some of models and programs we will use over and over, let's review them.
+
+**Bayesian network**: A generative model that entails a joint distribution that factorizes over a DAG.
+
+**Causal generative model**: a generative model of a causal mechanism.
+
+**Causal Bayesian network**: is a causal generative model that is simply a Bayesian network where the direction of edges in the DAG represent causality.
+
+**Probabilistic program**:  Generative model written as a program. Usually done with a framework that provides a DSL and abstractions for inference
+
+**Causal program**: Let's call this a probabilistic program that   As with a causal Bayesian network, you can write your program in a way that orders the steps of its execution according to cause and effect.
 
 ### Difference between Bayesian networks and probabilistic programming
 
-* BNs have more constraint
-  * Probabilistic relationships limited to conditional probability distributions (CPDs) factored according to a DAG.  
-    * Frameworks typically limit you to a small set of parametric CPDs (e.g., Gaussian, multinomial).
-    * bnlearn allows multinomial or ordinal variables for discrete, Gaussian for continuous.
-* PPLs let you represent relations any way you like so long as you can represent them in code.
-  * Nonparameterics
-  * Strange distributions
-  * Control flow and recursion
-    * DAGs all variables are known in advance
-    * "Open world models": control flow may create new variables (blackboard)
+* Causal Bayesian network(BN) is a DAG, where each edge represents a causal effect between two nodes. In BNs, the joint distribution is a product of all the factored conditional probability distributions(CPDs).
+* Probablistic Programming Langugage(PPL) is more expressive than Bayesian networks.
+  * Using PPLs you can develop none-parametric causal models like Dirichlet Processes. To understand this in detail lets take a look at the Chinese restaurant process example which is similar to k-means but without fixed value for k. The example is as follows:
+Imagine a Chinese restaurant in which customers enter. A new customer sits down at a table with a probability proportional to the number of customers already sitting there and sits on a new table with some probability. Bayesian networks cannot represent such a dynamic process with its static DAG.
+  * PPLs allow control flow (if, for, while) and recursion. which helps in creating open world model with variables that are avaible in models based on some condition. For example 
+      
       ```
       X = Bernoulli(p)
       if X == 1:
           Y = Gaussian(0, 1)
       ```
+      
+      Here, the existance of Y dependes on the value of X. You can also created complex model like gaussian random walk where each step depends on the previous step.
+      
       ```
       X = Poisson(λ)
       Y = zeros(X)
@@ -65,90 +89,173 @@ Our goal is to understand causal modeling within the context of generative machi
       for i in range(1, X):
           Y[i] = Gaussian(Y[i-1], 1))
       ```
-* Inference ![Image](fig/inference.png)
-  * Inference is easier in BNs given the constraints
-    * PGM inference such as belief probagation, variable elimination
-  * In PPLs inference is tougher
-    * Require you to become something of an inference expert
-    * That said, PPL developers provide inference abstractions so you don't have to work from scratch
-    * PPLs use cutting-edge inference algorithms
-      * Include tensor-based frameworks like Tensorflow and PyTorch, allow you to build on data science intuition.
-      * Stochastic variation inference
-      * Minibatching -- process groups of training examples simultaneously to take advantage of modern hardware like GPUs
-  * Finally, it is easier to reason about the joint distribution if you have a DAG. 
+
+**Why bayesian networks over probabilistic programs?**
+
+> The application of graphical models come from its ability to perform inference. 
+
+Inference in Bayesian networks is easy because of its constraints on types of models you can develop using DAG.
+    
+Because of the intricacies of the control flow, in PPLs inference is tougher and hence users require some kind of inference expertise. That being said, PPLs provide inference abstractions and cutting-edge inference algorithms so users don't have to work from scratch. 
+
+Moreover, PPLs are backed by tensor-based frameworks like Tensorflow and PyTorch, that enables messive parallelism while performing inference.
+
 
 ## Reasoning with DAGs
 
-###  Intuition
+DAG is a graphical language for reasoning about joint probability distribution, and also reasoning about causality. DAGs have been used to represent causal and temporal relationships between variables.
 
-* DAGs as a graphical language for reasoning about conditional independence
-* Impossible to learn a language all at once, we'll focus on learning what it can do for us
+We show how the approaches from probability and graph combines and give us a powerful language to reason about causality.
 
-### Reading DAGs as factorizations
+### Probability concepts
 
-#### Recap on core concepts
+**Conditional probability**:
+  Given two nodes $X$ and $Y$, conditional probability can be represented as:
+  $$P(X\mid Y) = \frac{P(X,Y)}{P(Y)}$$
+  Now rearranging, the joint can be expressed as
+  $$P(X,Y) = P(X\mid Y)P(Y)$$
 
-* Conditional probability
-* Conditional independence
-  * Notation: $U \perp_{P_{\mathbb{X}}} W|V$
-  * Implications to factorization
-  * Conditional independence in the joint changes the DAG
-
-### Core graphical concepts
-
-* A path in $\mathbb{G}$ is a sequence of edges between two vertices
-  * todo: formal notation, see page 82 of Peters 2017
-* Pearl's d-seperation -- Reading conditional independence from the DAG
-  * todo: formal notation
-  * So what?  We saw how conditional independence shapes the DAG.  This shows 
-* V-structures / Colliders
-  * moral v-structure
-  * immoral v-structure and conditional independence
-    * Sprinkler example
-    
-### Taking a step back -- what does conditional independence have to do with causality?
-
-* correlation vs causation
-* Latent variables and confounding
-* That v-structure example was causal
-* If you can't remember, use the algorithm (bnlearn, pgmpy)
-* Reduces the problem to reasoning about the joint probability distribution to graph algorithms.
-* Without a DAG, no d-separation.  Could there be a more general form of d-separation that could operate on a probabilistic program?
-
-### Markov Property
-
-* Markov blanket
-  * probability definition
-  * DAG definition (slides)
-  * Implications to prediction
-* Markov property (slides)
-  * Global
-  * Local
-  * Markov factorization
-* Markov equivalence 
-  * Recap: The definition conditional probability is P(A|B) = P(A,B)/P(B) (blackboard)
-    * This definition means you can factorize any joint into a product of conditionals.  For example P(A, B, C) =  P(A)P(B|A)P(C|A, B)
-    * A product of conditionals can be represented as a DAG.  In this case with edges {A-> B, B -> C, A->C}.
-    * But you can also factorize P(A, B, C) in to P(C)P(B|C)P(A|B,C), getting edges {C->B, B->A, C->A}.
-    * So you have two different DAGs that are equivalent factorizations of the joint probability.  Call this equivalence Markov equivalence.
-    * Generally, given a DAG, the set that includes that DAG and all the DAGs that are Markov equivalent to that DAG are called a Markov equivalence class.
-  * PDAG is a compact representation of the equivalence class
-    * When you have an equivalence class of some thing, trying to find some meaningful representation of that class without enumerating all of its members is a hard thing to do.
-    * Usually the best you can do is look for some kind of isomorphism between two objects to test if they are equivalent, according to some definition of equivalence
-    * The nice thing about the equivalence classes of DAGs is that all the DAGs will have the same "skeleton", meaning set of connections between nodes.
-    * The difference is that some or all of those edges will have different directions in different DAGs.
-    * This is where we get the PDAG as a compact representation of an equivalence class.  The PDAG has the same skeleton as all of the members of the equivalence class.
-    * The undirected edges in the PDAG correspond to edges that vary in direction among members of the class.
-    * A directed edge in the PDAG mean that  all members of the class have that edge oriented in that direction.
-  * There are other graphical representations of joint probability distributions
-    * Undirected graph -- doesn't admit causal reasoning
-    * Ancestral graphs (slide) -- Doesnt directly map to a generative model
-
-## Causality and DAGs
-  * Assume no latent variables (very strong assumption)
-  * Causation vs correlation -- only two options
-  * A second look at PDAGs
+**Conditional independence**:
+  Given that we have observed $Z$, $X$ is conditionally independent of $Y$ in the probability distribution ${P_{\mathbb{A}}}$(denoted $X \perp_{P_{\mathbb{A}}} Y\mid Z$), if and only if the conditional joint probability can be written as product of conditional marginal probabilities i.e,
+  $$P(X,Y\mid  Z) = P(X\mid Z)P(Y\mid Z)$$
+  Intuitively, this means that once $Z$ is known, $Y$ provides no additional information about $X$. Thus, the joint distribution on $X$, $Y$ and $Z$ is 
   
+  $$P(X,Y,Z) = P(X,Y\mid Z)P(Z) = P(X\mid Z)P(Y \mid Z) P(Z)$$
   
+  DAGs are useful for representing conditional independence relationship between variables. Lack of edges in DAG represent Conditional independence assumptions and hence, more such assumptions, lesser the edges in the graph. 
+
+> Conditional independence makes a DAG compact.
 
 
+### Graph concepts
+
+**Path**
+
+A path in $\mathbb{G}$ is a sequence of (at least two) distinct vertices $i_1,...,i_m$, such that there is an edge between $i_k$ and $i_k+1$, for all $k=1,...,m-1$.
+
+**Pearl's d-separation**
+
+Consider three disjoint set of variables, X,Y and Z represented as nodes in a graph $\mathbb{G}$. To test whether X is independent of Y given Z, we need to test whether the nodes corresponding to variables $Z$ **blocks** all paths from X to Y. This is defined by d-separation.
+Formally, a path $p$ is said to be d-separated by a set of nodes Z if and only if:
+1. $p$ contains a chain $i\to m\to j$ or a fork $i\leftarrow  m\to j$, such that the middle node $m$ is in $Z$
+2. p contains an inverted fork (or collide) $i\to m\leftarrow j$ such that the middle node
+m is not in Z and such that no descendant of $m$ is in $Z$.
+A set $Z$ is said to d-separated $X$ from $Y$ if and only if $Z$ **blocks** every path from a node in $X$
+to a node in $Y$.
+
+![](fig/d-sep.png)
+
+In the above picture, $U$ is conditionally independent of $W$, given $V$ in the first three cases. Intuitively, in causal chains(1&2) and causal forks(3), $U$ and $W$ are marginally dependent, but, become independent of each other when $V$ is known. Conditioning on $V$ appears to block the flow of information along the path, so learning about $U$ will not effect the probability of $W$, once $V$ is observed. 
+
+For example, in structure 1, consider $U$ to be Grandparent's genome, $V$ the parent's genome and $W$ is your genome information, and we know everything about the parent's genome($U$). Now, there is no new information about your genome that your grandparent's genome($U$) can provide, given the parent's genome($V$). A similar blockage of information in observed in the second case. In structure 3(common parent), $V$ is the parent's genome, if $U$ is the sibling's genome, $W$ is your genome. Now once the parent's genome is know, theses no new information the sibling's genome can provide that can explain your genome.
+
+**V-structures**
+
+V-structures, also know as colliders, or inverted forks, work in a different way. V-structures represents two causes having a common effect(structure 4 in the above figure). On observing the middle variable(effect $V$), the two extreme variables(causes $U$ and $W$) which were marginally independent, will now have an unblocked path between them, making them dependent, and this is true for any descendant for $V$
+However, if the effect is not observed, the two variables causing it will remain independent.
+
+This is a little unintuitive, so let us consider a simple example of a sprinkler.
+
+![](fig/sprinkler.png)
+
+Grass will be **wet** by two causes: when it rains(**Rain** = **yes**); when the sprinkler is on(**sprinkler** = **on**). Now lets say, we have observed that the grass is wet, and by some means(say, Google weather) we have the information that it has not rained(**Rain** = **no**). We now can conclude that the sprinkler was on(**sprinkler** = **on**). Generally, there is no correlation between rain and sprinkler, they are independent, but, when we observe the grass(the effect), the path is now **unblocked**, and this induces dependence among the causes(rain and sprinkler) 
+
+This corresponds to the general pattern of causal relationships: observations on a common consequence of two independent causes tend to render those causes dependent, because information about one of the causes tends
+to make the other more or less likely, given that the consequence has occurred.
+
+There are two types of V-structures  
+1. **immoral v-structure**: V-structure in which the parents are **not** linked by an arc.  
+2. **moral v-structure**: V-structure in which the parents are linked by an arc.  
+
+![](fig/v-structures.png)
+
+
+
+#### What does conditional independence have to do with causality?
+
+Consider 2 variables $X$ and $Y$, a correlation between them would mean that either $X$ causes $Y$ or $Y$ causes $X$. Correlation implies that one of the two variables is causal. Now, consider a graph $\mathbb{G}$ with three variables, $X$, $Y$ and $Z$ modeled as $X\to Y\to Z$, whose joint probability can be factorized as 
+$$P(X)P(Y\mid X)P(Z\mid Y)$$  
+
+This can lead to three equivalent factorization: 
+$$P(X)P(Y\mid X)P(Y\mid X,Z)$$
+$$P(Y)P(X\mid Y)P(Z\mid Y)$$ 
+$$P(Z)P(Y\mid Z)P(X\mid Y)$$
+And 3 equivalent DAGs. Now in such a case, correlation implies that one of these models, is a causal model. Using correlations, we may at least infer the existence of causal links from correlations, if not for a concrete causal graph. Conditional independence narrows down the causal negatives and reduces the problem to reasoning about the joint probability distribution to graph algorithms.
+
+R's **bnlearn** library, includes a function **d-sep**, and Python's **pgmpy** library with modules local_independencies and get_independencies, can be used to test for d-separation, or to get d-separated nodes.
+
+#### Markov blanket  
+
+The Markov blanket for a node in a graphical model contains all the variables that shield the node from the rest of the network. This means that the Markov blanket of a node is the only knowledge needed to predict the behavior of that node and its children.
+
+In terms of joint probability, this would mean that every set of nodes in the network is conditionally independent of $A$, when conditioned on the Markov Blanket of $A$. Formally, 
+$${P(A\mid \operatorname {MB} (A),B)=P(A\mid \operatorname {MB} (A))}$$
+Where ${\operatorname {MB}(A)}$ is the set of nodes in the Markov Blanket of $A$
+
+
+![](fig/markovBlanket.png)
+
+In Bayesian networks, the Markov blanket of node A includes its **parents**, **children** and the **spouses**. In the above figure, the nodes in the blue circle is the Markov Blanket of node A. 
+The reason why we include spouses because of the v-structure. Conditioning on the child, they become dependent
+
+> The Markov Blanket, d-separates a variabe from everything else outside. 
+ 
+This is an important concept to understand for machine learning as well. If we were fitting a model, once we include the Markov Blanket as predictors, any other predictor we add, is overfitting. 
+
+> Theoretically, markov blanket of a variable is the minimal set of predictors for that variable!
+ 
+
+
+#### Markov Properties
+
+1. **Global**: A graph is globally Markov with respect to joint distribution if every d-sep inside the graph corresponds to conditional independence statement within the joint probability distribution ${P_\mathbb{X}}$.
+  Formally,
+$${U \perp_{\mathbb{G}} W\mid V \implies U \perp_{P_\mathbb{X}} W\mid V }$$  
+
+2. **Local**: Every variable is conditionally independent of its non descendants given it parents. A well know example of local Markov property is a Markov chain.   
+
+3. **Markov factorization**: If we can factorize a joint probability distribution by conditioning each node by its parents, then we satisfy Markov factorization property. This makes it a computational efficient way of evaluating the joint using logarithmic properties.
+  $${P_{\mathbf{X}=x}}=\pi(x_1,...,x_d) = \prod_{j=1}^{d} \pi(x_j\mid Pa_{j}^{\mathbb{G}})$$
+  $$\log (\pi(x_1,...,x_d)) = \sum_{j=1}^{d} \log \pi(x_j\mid Pa_{j}^{\mathbb{G}})$$
+
+> These three properties are equivalent definitions, if one of them is true, the others are true.
+
+#### Markov Equivalence Class
+
+Consider these valid factorizations of $P(A,B,C)$
+$$\begin{align}
+P(A)P(B\mid A)P(C\mid B)\ (A\to B \to C)\\
+P(C)P(B\mid C)P(A\mid B)\ (C\to B \to A)\\
+P(B)P(C\mid B)P(A\mid B)\ (C \gets B \to A)
+\end{align}
+$$
+
+In all of these factorizations, we preserve the conditional independence of $A$ and $C$ (i.e. $A \perp C \mid B$). In other words, if you know that this conditional independence hold in the real world, only one of these three networks can be the true causal model.
+
+This is the reason why correlation does not imply causality. All of the factorizations above look the same from the statistical independence assumption.
+
+We often use **PDAG** (partial DAG) to show equivalence. All the members of the PDAG contains the same skeleton. Given an edge, for every graph in the PDAG family goes in one direction, that is a directed edge in PDAG. If there is at least one time when an edge goes in the opposite direction in the class, that becomes undirected.
+
+> For example, second and third factorizations fall into $C - B \to A$ equivalence class. These three graphs can be factorized as a PDAG $C - B - A$.
+
+PDAG gives a compact representation of an equivalance class. Once we have the PDAG, we can orient the undirected edges in any way, **as long as we don't introduce a new v-structure**. So, every member of the equivalence class has the same v-structure.
+
+
+There are other graphical representations of joint probability distribution  
+1. Undirected graph - All edges are bidirectional, and does not admit causal reasoning.    
+2. Ancestral graphs - A type of mixed graph to provide a graphical representation for the result of marginalizing one or more vertices in a graphical model, this does not directly map to a generative model.
+
+### Faithfulness and Minimality
+
+These are the assumptions required to reason causally from a causal Bayesian network.
+
+**Faithfulness Assumption**: A distribution is faithful to a DAG if 
+
+$$U \perp_{P_{\mathbb{X}}} W | V \implies U \perp_{\mathbb{G}} W | V$$
+
+**Minimality Assumption**: A DAG is minimal with respect to a distribution if 
+
+$$U \perp_{\mathbb{G}} W | V \implies U \perp_{P_{\mathbb{X}}} W | V$$
+
+We talked about how d-separation assumptions make our DAG compact. A minimal DAG captures all the conditional independences in true distribution.
+  
