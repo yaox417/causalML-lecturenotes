@@ -20,7 +20,8 @@ knitr::opts_chunk$set(fig.path="fig/")
 
 ```{r, echo=FALSE}
 library(reticulate)
-use_virtualenv('venv', require=TRUE)
+#use_virtualenv('venv', require=TRUE)
+use_python('/anaconda3/envs/pyro/bin/python',required = TRUE)
 ```
 
 # Tutorial on deep probabilitic modeling with Pyro
