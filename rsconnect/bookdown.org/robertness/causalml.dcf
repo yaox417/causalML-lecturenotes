@@ -5,9 +5,9 @@ account: robertness
 server: bookdown.org
 hostUrl: https://bookdown.org/__api__
 appId: 2584
-bundleId: 10557
+bundleId: 10646
 url: https://bookdown.org/robertness/causalml/
-when: 1560377271.63752
+when: 1560981865.53288
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: _0_-causal_programming.Rmd|_bookdown.yml|.Rbuildignore|01-class_overview.Rmd|02-bnlearn_tutorial.Rmd|03-pyro_tutorial.Rmd|04-causal_models_as_generative_ml.Rmd|05-introduction_to_interventions.Rmd|06-confounding_deconfounding.Rmd|07-adjustment.Rmd|index.Rmd|LICENSE|README.html|README.md|data/survey.txt|_book|_bookdown_files|fig|venv
+ignoredFiles: _0_-causal_programming.Rmd|_bookdown.yml|.Rbuildignore|01-class_overview.Rmd|02-bnlearn_tutorial.Rmd|03-pyro_tutorial.Rmd|04-causal_models_as_generative_ml.Rmd|05-introduction_to_interventions.Rmd|06-confounding_deconfounding.Rmd|07-adjustment.Rmd|08_other_topics.Rmd|index.Rmd|LICENSE|README.html|README.md|data/survey.txt|_book|_bookdown_files|venv
