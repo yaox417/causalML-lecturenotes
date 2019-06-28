@@ -125,9 +125,44 @@ where $\mathbf{PA}_{\mathbb{C}, i} \subseteq \mathbf{X} \setminus X_i$ are the p
 3. Apply do operator
 4. Forward from noise posterior after having applied do operation.
 
+## Potential outcomes framework
+
+* Also called Rubin causal model, widely used in the social sciences, and as a result it is the one most commonly used in the tech industry.  This is because the big companies tend to higher economists such as Hal Varian and Susan Athey, as well as computationally savvey social scientists to address causal problems (auctions, recommendation problems, etc.).
+* Reformulating blindness problem as potential outcomes
+* Let $B_{u}^{T = 1}$ represent the outcome patient $u$ (going blind $B=1$ or getting cured $B=0$) if she recieves treatment $T=1$. $B_{u}^{T = 1} = 1$ the outcome for $u$ under $T=1$ is blindness, $B_{u}^{T = 1} = 0$ is no blindness.
+* **The fundamental problem of causal inference**: To get a causal effect, we want $B_{u}^{T = 1} - B_{u}^{T = 0}$.  So $B_{u}^{T = 1}$ and $B_{u}^{T = 0}$ are both variables we want to know.  However, for each unit $u$ we can never observe both of these at the same time.  So one of these we call the "observed" outcome, and one of these we call the counterfactual outcome.
+* Standard assumption in the framework is SUTVA -- stable unit treatment variable assumption.  This means that the potential outcome for patient $u$ is independent of the potential outcome for patient $v$.  We are making this assumption in the DAG based models as well, otherwise explicitly model other patients as nodes.  This is the kind of assumption that gets violated with social network interference.
+* Notice that the causal effect we are interested is defined in terms of a specific patient, it is the **unit-level causal effect**: $\text{CE} = B_{u}^{T = 1} - B_{u}^{T = 0}$.  Averaging this over all the patients provides the same average causal effect we have been reasoning about previously.
+* So to estimate the average cause effect as follows $$ \sum_{u \in U_1} B_{u}^{T = 1} - B_{u}^{T = 0} \sum_{u \in U_0} $$
+* A key difference with our SCM model is that $B_{u}^{T = t}$ is not treated as modeled probabilistically.  They are hidden not random.  In frequentist statistics termonology, they are parameters, not random variables.  The only random variable is in the estimate of the random treatment effect.
+
+## Relationship between SCMs and Potential Outcomes
+* Our SCM approach represents potential outcomes using the language of counterfactuals.
+* In our SCM model, each patient will have a specific value for $N_B$ and $N_T$.
+* $B_u^{T = \tilde{t}} = B^{M: N = n_u; do(T =t)}
+* The i.i.d modeling assumption when we use when we condition on data satifies SUTVA.
+* There are theoretical conditions that show when these two representations are equivalent (not discussed here).  Under this equivalency, any theorem that is true in one representation will be true in the other.  That said, some might be easier to prove in one than in the other.
+* Potential outcomes also often make an assumption called ignorability.  This means B_{u}^{T = 1} \perp B_{u}^{T = 0} | Z$ where Z is a set of measured covariates.  It is a neccesary assumption for potential outcome tools to be applied.  However, it is not testible.  In the DAG representation, it can be shown that ignoribility holds if Z is a valid adjustment set and blocks all backdoor paths form B to T.  This of course is testible.  This is not to say that the SCM approach is superior, rather, this is an advantage of specifying the assumptions of the model in the form of a DAG.
+
+## Counterfactual probability of neccessary and sufficient cause
+* Probability of neccessity: $P^{M; do(X = 0), X = 1, Y = 1}(Y = 0)$ or $P(Y^{do(X = 0)}= 0 | X = 1, Y = 1)$
+* Probability of sufficiency: $P^(M: do(X = y), X = 0, Y = 0)(Y = 1)$ = $P(Y^{do(X = 1)}= 1 | X = 0, Y = 0)$
+### Examples: 
+  * Not neccessary for the soldier to fire for prisoner to die but sufficent. PS = 1, PN = 0
+  * Sufficient for firing of the gun to cause person to run under piano.  PS is small. PN = 1
+  * Neccessary to have oxygen to burn down the house by not sufficient.
+* Traditional (non-counterfactual) statistical machine learning models cannot destiguish between the two using data alone.
+* Probability of neccessity and sufficiency: $P(Y^{do(X = 1)} = 1, Y^{do(X = 0)} = 0)$.
+* If have monotonicity assumption: changing X from 0 to 1 will never cause Y to change from Y to 0.  Not that this is not the case with the blindness problem.  If we change T from 0 to 1, for that rare population of people blindness will change from 1 to 0.
+* We will generalize this property to non-binary distributions later in the class.
+* If monotonicty holds, then $PNS = P(Y = 1 | do(X = 1)) - P(Y = 1 | do(X = 0))$
+
+
+
+
 ## Mediation
 
-* Motivating example
+###  Motivating example
 * Consider the model:
 ```{r, mediation, echo = FALSE, message=FALSE, warning=FALSE}
 library(bnlearn)
@@ -137,6 +172,6 @@ graphviz.plot(dag)
 * This is first case where we want to control for a mediator
 * Use "do" to hold things constant
 * $CDE = P(Y = y |do(X = x), do(M = m)) - P(Y = y |do(X = x), do(M = m))$
-* Natural direct effect is defined in temrs of counterfactuals: randomize gender, and ask them to apply to the department they would have prefered
+* Natural direct effect is defined in terms of counterfactuals: randomize gender, and ask them to apply to the department they would have prefered
 * $NDE = P(Y_{M = m} = 1|do(X = 1)) - P(Y_{M = m} = 1|do(X = 0))$
 
