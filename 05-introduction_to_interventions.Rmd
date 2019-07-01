@@ -1,94 +1,296 @@
 ---
-output: html_document
+output:
+  html_document:
+    fig_caption: yes
 ---
 
 ```{r include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(fig.path="fig/")
 ```
+
+
 # Introduction to Interventions
 
-## Recap: DAGs as a grammar for reasoning about a joint distribution
+In this lecture we will learn about the meaning of interventions and their implication to prediction.
 
-* [Review of generative modeling definitions][Recap: Causal models as generative models]
-* DAGs provided a graph theory-based grammar for reasoning about a joint distribution
-* They tell you what is dependent and what is conditionally independent
-* Causal Bayesian networks follow the Markov property.  One way of expressing this is the local Markov property (slides)
-* Each factor in the local Markov property factorization is represented as some conditional probability distribution.  If we follow the ordering of the DAG, we get the algorithm for generating the data.
 
-## Ladder of causality (slides)
+## Ladder of causality
+  
+The ladder of causality has 3 levels: 1) Association 2) Intervention 3) Counterfactual. Most of the definitions and examples in this section are from the book of why by Pearl[2].
 
-* Associative:
-  * Broad class of statistically learned models (discriminiative and generative)
-  * Includes deep learning (unless you tweak it)
-* Intervention
-  * Why associative models can't do this -- changing the joint
-  * Causal Bayes nets
-  * Tradition PPL program
-* Counterfactual
-  * Causal Bayesian networks can't do this
-  * Structural causal models -- can be implemented in a PPL
+```{r fig1, fig.cap = "Ladder of causality. from the book of why by pearl.", fig.height=7, fig.width=7 ,fig.align='center', echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("./fig/Ladder_of_Causality.png")
+grid.raster(img)
+```
 
-## Interventions and implications to prediction
-* Definition in terms of probability distribution
-* Implications to prediction: Predicting the weather vs predicting the sales
-* Perfect/ideal intervention - artificially assigning the value of a random variable
-* Perfect intervention represented as a node in a Causal Bayes Net
-  * Represented as variable with no causes and two states (on/off).
-  * Outcome is deterministic, irregardless of other parents
-    * Can be awkward to represent in terms of conditional probability
+### Association 
+
+The first level, Association is related to the cognitive ability of seeing or in other words observation. It includes broad class of statistically learned models (discriminiative and generative). In this level, we are looking for regularities in observations. This is what an owl does when observing how a rat moves and figuring out where the rodent is likely to be a moment later, and it is what a computer Go program does when it studies a database of millions of Go games so that it can figure out which moves are associated with a higher percentage of wins. We say that
+one event is associated with another if observing one changes the likelihood of observing the other.
+
+In the association level of the ladder of causality, we call for predictions based on passive observations. As it is noted in figure \@ref(fig:fig1) this level is characterized by the question "what if I see ...?" For example one example in this case is how likely is a customer who bought toothpaste to also by dental floss? This can be easily calculated in Statistics by gathering data on the customers who bought toothpaste and then among those focus on the ones who also bought dental floss. In other words, we want to calculate the conditional probability of $P(floss = 1 | toothpaste = 1)$. This will be calculated based on observational data or in other word based on what was seen. Statistics alone cannot tell whether buying floss is the cause of buying the toothpaste or vice versa. For the sales manager it really doesn't matter what is the causal relationship between this two items. Another example of association is "correlation" and "regression" which is a typical measure of association. Most of machine learning methods are also in the first ladder of causality like deep neural networks. In deep neural networks We are looking for a way to learn the association in a high dimensional non linear space. Deep learning has given us machines that have impressive abilities but no intelligence. They are driven by a stream of observations (raw data) to which they attempt to fit a function, just like how we fit a line in linear regression.
+
+We can think of Association in terms of discriminative models. One common example of Association is Neural Network. Neural network brute forces things; the goal of a neural network is to find the right set of weights to bridge the input and output. Another example of association is the Naive Bayes classifier.
+
+### Intervention
+
+The second level of ladder of causality is intervention. It is when we begin to change the world. For the example of toothpaste and floss a question to ask for this level would be, "What will happen to our floss sales if we double the price of toothpaste?" This knowledge is absent from raw data and we cannot answer this question from passively collected data (raw data). In this case you want to deliberately intervene to the price of toothpaste regardless of any market conditions that may had affected the price in observational data (in your observational data you may see doubled prices for toothpaste as well as it's original price but that is due to market conditions like lack of toothpaste for a period of time). One way to predict the result of an intervention is to experiment with it under carefully controlled conditions. Even if we don't have an experiment to predict interventional results, if we have an accurate causal model, we are able to move from level 1 of the ladder to level 2. Later in this section we will talk about structural causal models (SCMs).
+
+Level 2 of ladder of causality is characterized by the question "What if we do ...?" What will happen if we change the environment? In pearl's notation, for our thoothpaste example we write this kind of query as $P(floss | do(toothpaste))$. This tells us the probability that we will sell floss at a certain price, given that we set the price of toothpaste at another price. Note that this **do** operator is different from conditional probability. We will talk more about this in the next section.
+
+### Counterfactual
+
+Level 3 of ladder of causality is characterized by the question "What if I had done ...?" "Why?". A good example of a counterfactual question can be "Had Trump not fired Comey, would he have still been charged with obstruction of justice" to which Muller responded with another counterfactual statement. He said that if he did believe that a crime was committed, he would have said so. No experiment can go back in time to see the effect of a different treatment on the patient when all other conditions are fixed. The data that we have cannot tell us what will happen in a counterfactual or imaginary world, but the human mind makes these inferences reliably all the time. Causal Bayesian networks cannot answer counterfactual questions. For toothpaste example, we can ask "What is the probability that a customer who already bouth toothpaste would still have bought it if we had doubled the price?". Having a causal model that can answer counterfactual questions is very valuable. We call these models Structural causal models (SCMs) that can be implemented in a probabilistic programming language. Structural causal models look like a causal Bayesian network except all the variables in the joint distribution are going to be a deterministic function derived from its parents and some noise.
+
+## Assumptions for the Causality: Faithfulness and minimality
+
+Suppose the set of observed variables $\mathbf{X}$ and $\mathbf{Y}$ is causally sufficient and its causal structure can be properly represented by a DAG over V. 
+
+**Causal Minimality Assumption**: Every d-separation statement entailed by the causal DAG over V is satisfied by conditional independence over V. 
+
+> Minimality is the property of DAG. In other words, we say that a DAG is minimal with respect to the entailed distribution.
+
+**Causal Faithfulness Assumption**: Every conditional independence statement is d-separated by the causal DAG over V. 
+
+> Minimality is the property of the factorization of the joint. In other words, we say that a the factorization is faithful to the DAG.
+
+## Structural causal models
+
+Structural causal model (SCM) implies the nature of data generation procedure, which has both deterministic process and random variation.
+Randomness comes from the initial conditions and the relationship between variables is deterministic.
+
+The random initial variables are often called **noise** variables or **exogenous** variables. Every variable in the system is associated with its exogenous noise variable. Here is an example.
+
+$$
+N_X\sim\mathcal{N}(0,1), N_Y\sim\mathcal{N}(0,1)\\
+X = N_X\\
+Y = X^2+N_Y
+$$
+
+In general, structural causal model takes the form
+
+$$
+C :=N_C\\
+E := f_E(C, N_E)
+$$
+
+Here $N_C$ and $N_E$ are noise variables. $N_C \perp N_E$. $f_E$ is the deterministic functional assignment. In practice, this can be arbitrary functional approximator, like neural networks.
+
+Here is a causal program for the first example in Pyro. This program can be a model of Newtonian mechanics which accepts all the noise as pre-conditions and hence becomes determnistic.
+
+```
+def fx(Nx):
+	return Nx
+
+def fy(X, Ny):
+	return X*X + Ny
+
+def scm(noise):
+  	N_X = noise[x].sample()
+    N_y = noise[y].sample()
+    X = fx(Nx)
+    Y = fy(X, Ny)
+```
+
+The idea of SCMs is very much aligned with a famous thought experiment called **Laplace's demon** - If the demon knows the precise initial conditions of every atom in the universe, their past and future values for any given time are entailed; they can be calculated from the laws of Newtonian mechanics (deterministically).
+
+Considering a simple linear regression case,  
+$$X = \pi_X  \\
+\epsilon = N(0,1)  \\
+Y= \beta X + \alpha + \epsilon$$
+
+In this case, the data generation process of $X$ has no deterministic mechanism. 
+
+In a slightly different case,  
+
+$$N_x = \pi_x \\
+X = F(N_x) \\
+\epsilon = N(0,1) \\  
+Y= \beta X + \alpha + \epsilon$$
+
+In this case, the data generation process has both deterministic mechanism (i.e. $F(N_x)$) and random process on X.  
+
+## Interventions
+
+In this section, we formally introduce interventions and demonstrate different ways to  perform intervention on Bayesian netowrks as well as SCMs.
+
+### Relationship between intervention and causation
+
+There is a famous quote that say "correlation is not causation". If two variables are correlated, one is not necessarily the cause of the other one. For example ice cream sale and rate of crime are highly correlated with each other, but none of them is the cause of the other one. In fact, ice cream and violent crime are more common in hot weather. For this reason, in order to find causality, randomized controlled experiments are useful tools. In these experiments, all factors that influence the outcome variable are static, or vary at random, except for one variable. So if the outcome variable changes, it means that the outcome variable must be due to that one input variable.
+
+  We connot design a randomized controlled experiment for all the cases. For example we cannot control the weather or it is not to control for some factors like force people to smoke to experiment it's effect on lung cancer. In some cases, even randomized control trials may encounter problem. People may drop out of trial or fail to take their medication.
+
+  Intervention helps to find causal relationship. Considering a simple case where A and B are only two nodes in BayesNet. Their association implies either A causes B or B causes A. With intervention of A, if probability of B changes, then A is the cause, otherwise B is the cause.
+  
+There is a lot of philosophical controversy associated with the intervention and causation. Paul Holland firmly believes that "There is no causation without intervention". This implies that we cannot simply say that obesity is the cause of heart attack since obesity cannot be meaningfully intervened (i.e. Obesity can't be set individually without perturbing other factors that leads to obesity). Only factors that can be meaningfully intervened qualify as a cause of a given outcome. 
+
+We will not get into the phosophical debate of the validity of these different views on causality. But it is important to note that they exist and they're controvertial.
+
+### Relationship between intervention and prediction
+
+  Let's remind ourselves of why prediction is important in the context of machine learning. You train your model with your data, and now you have a predictor. The next step is to make decisions based on predictions. For example when you predict that someone has cancer with your machine learning algorithm, it's not enough to only predict the deases and let the patient alone! You have to make a decision for the patient about what to do next! 
+  
+  > Most of the times, the decisions are downstream of predictions.
+  
+  
+  If we train a model that takes data about weather and predicts whether or not it is going to rain tomorrow, and everyday that I have new data I retrian the algorithm. If I get up in the morning and the algorithm predicts that it is going to raing today, the decision that I make is to take an umbrella! In this example, my decision doesn't have any effect on the weather.
+  
+  Consider another example. If I work in a commerce company and I want to predict what my revenue today based on the last few days of online transactions. If I think that it is going to be low, my decision would be to launch some facebook ads. The facebook ads are going to drive traffic and hopefully impact myself. This decision is going to influence data point and feed it back into my training data. This is an example of intervention.
+  
+  Reasoning of intervention allows us to predict outcome, when it is not feasible to do the intervention. One can calculate the theoretical effect on an intervention without actually doing anything. 
+  
+  It is important to understand the implications of an intervention to prediction. Consider the examples that we just discussed: predicting the weather vs predicting the sales. It makes more sense to apply an intervention to predict the sales than to predict the weather, since sales but weather may be changed by intervention. Intervention can be used to predict the effect of a particular ad campaign on sales. One of the features of intervention here is the action may be real or hypothetical.
     
-    | I | X           | Y | Prob |
+### Types of Intervention and its representation on DAG
+  There is a difference between intervening on a variable and conditioning on that variable. If we intervene on a variable, we fix its value but the values of other variables change. When we condition on a variable, we only narrow our focus to the subset of cases where the variable we condition on takes a specific value.
+  
+**perfect intervention**:  is to artificially assign a value to a random variable. This means that once an intervention is performed on that random variable, its value or outcome will be deterministic, regardless of other parents. Sometime it can be awkward to represent in terms of conditional probability or even more awkward for continuous random variables. 
+  
+>  Perfect interventions could be viewed as graph mutilation, when "mutilate" the DAG means removing incoming edges the intervened upon variable. 
+  
+  If original DAG has Markov property, then mutilated graph also follows the same properties. If causal model is correct, then you can predict outcome of intervention without really doing experiment.
+  
+  The other way to show perfect intervention graphically in a causal Bayes net is to draw a node $I$ with no causes and two states (on/off) that goes to the variable that is intervened. For example, consider figure \@ref(fig:intZ) where X --> Z.
+  
+```{r intZ, fig.cap = "Intervention on Z with node I", fig.height=4, fig.width=4 ,fig.align='center', echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("./fig/interventionZ.png")
+grid.raster(img)
+```
+
+We can show this in this table. The first four rows are when the state of intervention if off and the last four rows is when the sate of intervention is on and Z gets value one with probability one.
+
+    | I | X           | Z | Prob |
     |---|-------------|---|------|
     | 0 | 0           | 0 | .8   |
     | 0 | 0           | 1 | .2   |
     | 0 | 1           | 0 | .1   |
     | 0 | 1           | 1 | .9   |
-    | 1 | $\forall x$ | 1 | 1.0  | 
+    | 1 | 0           | 0 |  0   |
+    | 1 | 0           | 1 |  1   |
+    | 1 | 1           | 0 |  0   |
+    | 1 | 1           | 1 |  1   |
+
+Mathmatically, it could be presented as below,
     
-  * Can be more awkward for continuous random variables
-    
-    $$Y \sim \left\{\begin{matrix}
-    \text{Normal}(\beta X + \alpha, 1) & \text{I} = 0 \\ 
-    \text{Dirac}(y)) & \text{I} = 1 
-    \end{matrix}\right.$$
-    
-    * In a probabilistic program :
-    
-    ```
-    y = 0 # or some other intervention value
-    def program(I):
-      X ~ Normal(0, 1)
-      if I:
-        Y ~ Normal(beta X + alpha, 1)
-      else:
-        Y ~ Dirac(y) # or just `Y = y`
-    ```
-* Perfect interventions as graph mutilation -- "mutilate" the DAG by removing incoming edges the intervened upon variable
-  * implemented in bnlearn (slides)
-* Equivalence class as graph manipulation
-  * Finding the PDAG of the mutilated class
+  $$Z \sim \left\{\begin{matrix}
+  \text{Normal}(\beta X + \alpha, 1) & \text{, if I} = 0 \\
+  \text{Dirac}(z) & \text{, if I} = 1 
+  \end{matrix}\right.$$
+
+  In a probabilistic program, it could be presented as,
   
-* Other kinds of interventions
-  * Soft interventions
-    * Changing or replacing the distribution, but the outcome is not deterministic
-    * Change of slope example
-    * Not implemented in Pyro (here's what syntax might look like)
-  * Fat-fingered interventions (board)
-* Randomization as intervention -- breaking influence of latent confounders
-  * Probabilistic program for randomization using metaprogramming
-* Interventions as Pearl's Do-calculus 
-  * $p(y|do(x))$: What is the distribution of Y if I were to set the value of X to x. 
-  * Generally different from $ p(y|x)$
-  * Notation: $P^{\text{do}(X = x)}$ vs $P^{(X = x)}$
-* `do` operator as metaprogramming Pyro
-* Advantages of the `do`-operater
-  * Consider that it allows us to reason about interventions, when it is not feasable to do the intervention
-  * That is why they are called "perfect" or "ideal"
-  * Powerful -- means we can answer causal questions without running an experiment
-* Controversy about the `do`-operator
-  * What does it mean to intervene on 'obesity'?  What does it mean to intervene on race? (slides)
+  ```
+  z = 0 # or some other intervention value
+  def program(I):
+    X ~ Normal(0, 1)
+    if I:
+      Z ~ Normal(beta X + alpha, 1)
+    else:
+      Z ~ Dirac(y) # or just `Z = z`
+  ```
+Another example that shows intervention graphically is as below:
+    
+```{r fig2, fig.cap = "DAG", fig.height=2, fig.width=3 ,fig.align='center', echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("./fig/DAG.png")
+grid.raster(img)
+```
+    
+An intervention on B would look like this:
+
+```{r fig3, fig.cap = "Intervention_DAG", fig.height=3, fig.width=4,fig.align='center', echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("./fig/Intervention_DAG.png")
+grid.raster(img)
+```
+    
   
-## Structural Causal Models
+**Soft intervention**: IN Soft intervention, we intervene on variable by changing it's distribution. Soft intervention on $X$ doesn't yield a deterministic assignment to $X$, instead it changes the way $X$ was originally generated. For example,
   
+  $$Z \sim \left\{\begin{matrix}
+  \text{Normal}(\beta X + \alpha, 1) & \text{I} = 0 \\
+  \text{Normal}(\sigma X + \alpha, 1) & \text{I} = 1 
+  \end{matrix}\right.$$
+  
+  **Randomization could be one special case of intervention** which aims to break influence of latent confounders. We will dive deeper into confounders in later and will also formally define randoization as intervention.
+  
+Other way of implementation can be probabilistic program using metaprogramming technique, such as `do`-operater in pyro.
+  
+### Interventions as Pearl's Do-calculus
+  In notation, when show forcing a variable $X$ to take a value $x$, by $do(X=x)$. So, $P(Y = y | X = x)$ is the probability that $Y = y$ conditional on finding $X = x$, but $P(Y = y | do(X=x))$ is the probability that $Y = y$ when we intervene to fix $X=x$.  
+  
+  `do`-operater could be used as metaprogramming in Pyro. It is the same as **perfect (or "ideal") intervention**. $p(y|do(x))$ answers the question about what is the distribution of Y if I were to set the value of X to x. In the distributional terminology, $P(Y = y|X = x)$ is the population distribution of Y among individuals whose $X$ value is $x$. But, $P(Y = y|do(X = x))$ represents the population distribution of Y if *everyone in the population* had their X value fixed at x $^{[1]}$. $P(Y|X)$ is an example of Association and the data is generated by performing rejection sampling until the desired number of samples is retrieved. There is no change in the original distribution of any of the random variables. In contrast, $P(Y|do(X))$ is an intervention where the value of X is deterministic and becomes independent of its parents. Therefore, the resultant data from $P(Y|X)$ and $P(Y|do(X))$ is different. 
+  
+  ***Example: SCM***  
+  One case using pyro as representation is:  
+
+```
+def program:  
+  A = flip($P_A$)
+  B = flip($P_{B1}$) if A else Flip($P_{B2}$)
+  if A
+    C = flip($P_{C1}$) if B else Flip($P_{C2}$)
+  else
+    C = flip($P_{C3}$) if B else Flip($P_{C4}$)
+```
+
+
+  To get the probability of C conditioned on B = 1:
+
+``` 
+C_prog = pyro.condition(program, {B=1})  
+```
+
+An intervention would result in the following changes
+
+```
+def intervened_program:  
+  A = flip($P_A$)
+  B = Dirac(1)
+  if A
+    C = flip($P_{C1}$) if B else Flip($P_{C2}$)
+  else
+    C = flip($P_{C3}$) if B else Flip($P_{C4}$)
+```
+
+  This program is same as when we do(B) = 1:  
+
+```
+  intervene_prog = pyro.do(program, data = {B=1})  
+```
+
+  ***Example: Randomized Controlled Trial***  
+Another example would be that of cancer treatment. There are two treatments for cancer - Treatment A and B. Treatment A is the treatment whose effect is to be found out and Treatment B is a placebo. 
+
+The DAG may look something like this:
+
+```{r figcancer, fig.cap = "Cancer treatment", fig.height=3, fig.width=4,fig.align='center', echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("./fig/05_cancer_example_dag.png")
+grid.raster(img)
+```
+
+Here T represents the treatment and O represents the outcome. Z represents some latent confounder that affects the treatment as well as the outcome (something like diet or exercise). An intervention would mutilate the graph and cut off all it's parents. In this case, an intervention would be something like a coin toss where if the outcome of the coin toss is heads the person would receive treatment A or else treatment B. This is an excellent example of using randomization as a perfect intervention because the outcome does not depend on any latent confounders.
+
+```{r figcancerintervention, fig.cap = "Cancer treatment intervention", fig.height=3, fig.width=4,fig.align='center', echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("./fig/05_cancer_example_intervention_dag.png")
+grid.raster(img)
+```
+
+  It allows us to reason about interventions, when it is not feasible to do the intervention. Another advantage of using do-operator is calculating the theoretical effect on an intervention without actually doing anything. 
+
+\textbf{References}
+**References**  
+[1] Judea Pearl, Madelyn Glymour, Nicholas P. Jewell. Causal Inference in Statistics: A Primer  
+[2] Judea Pearl, Dana Mackenzie. The Book of Why: The New Science of Cause and Effect
   
