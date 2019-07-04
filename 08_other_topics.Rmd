@@ -13,9 +13,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Recap
 * On the difference between covariate adjustment and do-calculus
+  * Covariate adjustment motivation: When quantify the casual effect of X->Y, there might be an indirect path, e.g. Y<-Z->X, then we d-separate the X->Y path by condition on Z
+  * Z acts like an AND gate for X
   * Covariate adjustment allows us to predict the results of an intervention.
     * Requires we observe the variables required to do the adjustment
-    * Covariate adjustment is taking a weighted average of an effect over every combination of strata in the adjustment set.  This is practically difficult (in terms of computation and expectation) if the number of strata is large.  If Z is continuous, then you have to integrate, which has its own set of practical challenges.
+    * Covariate adjustment is taking a weighted average of an effect over every combination of strata in the adjustment set.  This is practically difficult (in terms of computation and expectation) if the number of strata is large.  
+        * If Z is discrete, e.g. Z={$Z_1,Z_2,Z_3$} is the adjustment set, and suppose $Z_1$ has 3 levels, $Z_2$ has 3 levels, $Z_3$ has 2 levels, then we have to consider 18 levels of covariate adjustments in total. That presents practical challenges. 
+        * If Z is continuous, then you have to integrate, which has its own set of practical challenges.
   * Do-calculus is simulation of an intervention
     * When you don't have the variables neccessary to do covariate adjustment, you can still use do-calculus
 
@@ -35,23 +39,28 @@ P(Y= y|X = x, Z = z)P(Z=z) &= \frac{P(X = x, Y= y, Z = z)}{P(X = x, Z = z)}P(Z=z
 \end{align}
 * Therefore we can rewrite the adjustment formula as:
 $$P(Y=y|do(X = x)) = \sum_z  \frac{P(X = x, Y= y, Z = z)}{P(X = x| Z = z)}$$
+*{P(X = x| Z = z)}* is consistent. 
 * Suppose we are able to estimate a propensity score function $g(x, z) = P(X = x | Z = z)$
 * Then we can estimate $P(Y = y|do(X =x))$ using the following *inverse probability weighting* algorithm 
-"""
+
+```
 # using Pyro-ish code
 # M is desired number of samples
+
 samples = []
 weights = []
 for i in M:
-  x, y, z = model()
-  sample_prob = model.prob(x, y, z)
-  propensity_score = g(x, z)
-  weight = sample_prob / propensity_score
-  samples.append((x, y, z))
-  weights.append(weight)
-# resample according to new weights
+      x, y, z = model()
+      sample_prob = model.prob(x, y, z)
+      propensity_score = g(x, z)
+      weight = sample_prob / propensity_score
+      // only need to sample, more efficient and feasible than calculating pdf
+      samples.append((x, y, z))
+      weights.append(weight)
+// resample according to new weights
 new_samples = resample(samples, weights = weights)
-"""
+
+```
 * It is called inverse probability weighting because you multiply the joint probability of a sample by the inverse of a probability, in this case $g(x, z) = P(X = x|Z =z)$
 * The frequencies in `new_samples` is such that you can estimate $P(Y=y|do(X = x)$ with $\hat{p}(Y = y|X = x)$, where $\hat{p}$ is a proportion in `new_samples`.
 
@@ -59,8 +68,9 @@ new_samples = resample(samples, weights = weights)
 
 * Recall Laplace's demon example
 * As we mentioned before, a structural causal model is a deterministic extention to $\mathbb{C}$ has a causal DAG $\mathbb{D}$.  Assume there are $J$ random variables in the DAG.
+*The difference between deterministic and probabilistic assignment: e.g. deterministic -> $x_i=f_i(Pa_i,N_i)$ while probabilistic -> $x_i$~$P(x_i|Pa_i)$, in other words, deterministic assignment gives a fixed value but probabilistic gives a random value extracted from a distribution.
 * Each varible in the DAG is paired with on independent random variables called exogenous noise terms, I will call them noise terms
-* A distribution $P_{\mathbf{N}}^{\mathbb{C}}$ on independent \emph{noise} random variables $\mathbf{N} = \{N_i; i \in J \}$
+* A distribution $P_{\mathbf{N}}^{\mathbb{C}}$ on independent **noise** random variables $\mathbf{N} = \{N_i; i \in J \}$
 * The value of each variable is set deterministically by a function $f_i$ for the ith random variable called a structural assignments, such that
 $X_i = f_i(\mathbf{PA}_{\mathbb{C}, i}, N_i), \forall i \in J$
 where $\mathbf{PA}_{\mathbb{C}, i} \subseteq \mathbf{X} \setminus X_i$ are the parents of $X_i$ in $\mathbb{D}$.
@@ -96,6 +106,20 @@ where $\mathbf{PA}_{\mathbb{C}, i} \subseteq \mathbf{X} \setminus X_i$ are the p
   1. Regress X on Z and get $\hat{\beta}$ estimate of $\beta$
   2. Regress Y on the predicted values of the first regression $\hat{\beta}Z$
   3. The coefficient of $\hat{\beta}Z$ becomes is a consistent estimate of $\alpha$.
+
+* Algorithm (R code)
+```
+fit1=lm(y~x)
+resid=fit1.resid()
+if (corr(x,resid)>epsilon) // confounding problem
+    z=get_z() // use z to explain away the correlation between X and residence
+    if (corr(x,z)>xi)
+    //there is some backdoor path 
+        fit2=lm(x~z)
+        x_hat=predict(fit2)
+        fit3=lm(y~x_hat)
+        return (coef(fit3)$x)
+```
 * Statistical intuition:
   * Looking at the stuctural assignment for $X$: $$X:= \beta I + \gamma Z + N_X$$
   * Since $Z$ and $N_X$ are independent of $I$, then covariance between $Z, N_X, \hat{\gamma}$ is 0.  So we can treat $\gamma Z + N_X$ as a big noise term, and treat $\beta Z$ as a stand in for X.
@@ -103,12 +127,23 @@ where $\mathbf{PA}_{\mathbb{C}, i} \subseteq \mathbf{X} \setminus X_i$ are the p
   
 ## Counterfactuals
 * Notation
+* $P_Y^{M|x=1,do(x=0)}(Y=1)$ -> In real world x=1, and we want to know what happen to y=1 if x=0
+* use conditioning for real evidence and intervention for counterfactual
+* e.g. In the dataset, we have x=a or b, for one x=a, what will happen to y if x=b
+* e.g. Mueller's investigation: 'If we had confidence the President did not commit a crime, we would have said so'
+    + speech: say Trump is innocent, belief: believe Trump is innocent
+    + $P_{speech}^{speech=0, belief=0, do(belief=1)}(speech=1)$
+    + current reality: don't say Trump is innocent, don't believe Trump is innocent
+    + counterfactual / simulation: believe Trump is innocent
+
 * Reasoning through inference algorithm with SMC:  Eye disease model
 \begin{align}
- T &= N_T\\
+ T &= N_T \\
  B &= T * N_B + (1-T)*(1-N_B) \\
- N_T ~ Ber(.5), N_B ~ Ber(.01)
+  N_T ~ Ber(.5),& N_B ~ Ber(.01) 
 \end{align}
+
+_Note_: $T * N_B$ means patient will go blind if given treatment, $(1-T)*(1-N_B)$ means patient will go blind if given no treatment.
 
 * Suppose patient with poor eyesight comes to the hospital and goes blind (B=1) after the doctor gives treatment (T=1).  
 * We ask "what would have happened had the doctor administered treatment T = 0?"
@@ -119,12 +154,31 @@ where $\mathbf{PA}_{\mathbb{C}, i} \subseteq \mathbf{X} \setminus X_i$ are the p
  B &= T * 1 + (1-T)*(1-1) = T \\
 \end{align}
 
+* Inspired by book 'Causal Inference in Statistics - a Primer (Pearl, Glymour, Jewell)' 4.2.4: 
+    * Abduction: Use evidence $T = 1, B = 1$ to determine the value of $N_B$.
+    * Prediction: Use the M and the value of T = 0 (counterfactual) to compute the value of B,
+the consequence of the counterfactual.
+
 ## Bayesian counterfactual algorithm with SMCs in Pyro
 1. Condition on observed data
 2. Infer the noise terms
 3. Apply do operator
 4. Forward from noise posterior after having applied do operation.
 
+Algorithm:
+```
+noise={N_y:Ber(P_y),N_x:Ber(P_x}
+def model(noise):
+    N_y=sample(noise[N_y])
+    N_x=sample(noise[N_x])
+    x=f_x(N_x)
+    y=f_x(x,N_y)
+    return x,y
+condition_model=pyro.condition(model,{x:0,y:0})
+do_model=pyro.do(model,{x:1})
+noise_posterior=infer(condition_model,N_x,N_y)
+do_model(noise_posterior)
+```
 ## Potential outcomes framework
 
 * Also called Rubin causal model, widely used in the social sciences, and as a result it is the one most commonly used in the tech industry.  This is because the big companies tend to higher economists such as Hal Varian and Susan Athey, as well as computationally savvey social scientists to address causal problems (auctions, recommendation problems, etc.).
@@ -139,7 +193,7 @@ where $\mathbf{PA}_{\mathbb{C}, i} \subseteq \mathbf{X} \setminus X_i$ are the p
 ## Relationship between SCMs and Potential Outcomes
 * Our SCM approach represents potential outcomes using the language of counterfactuals.
 * In our SCM model, each patient will have a specific value for $N_B$ and $N_T$.
-* $B_u^{T = \tilde{t}} = B^{M: N = n_u; do(T =t)}
+* $B_u^{T = \tilde{t}} = B^{M: N = n_u; do(T =t)}$
 * The i.i.d modeling assumption when we use when we condition on data satifies SUTVA.
 * There are theoretical conditions that show when these two representations are equivalent (not discussed here).  Under this equivalency, any theorem that is true in one representation will be true in the other.  That said, some might be easier to prove in one than in the other.
 * Potential outcomes also often make an assumption called ignorability.  This means B_{u}^{T = 1} \perp B_{u}^{T = 0} | Z$ where Z is a set of measured covariates.  It is a neccesary assumption for potential outcome tools to be applied.  However, it is not testible.  In the DAG representation, it can be shown that ignoribility holds if Z is a valid adjustment set and blocks all backdoor paths form B to T.  This of course is testible.  This is not to say that the SCM approach is superior, rather, this is an advantage of specifying the assumptions of the model in the form of a DAG.
@@ -174,4 +228,3 @@ graphviz.plot(dag)
 * $CDE = P(Y = y |do(X = x), do(M = m)) - P(Y = y |do(X = x), do(M = m))$
 * Natural direct effect is defined in terms of counterfactuals: randomize gender, and ask them to apply to the department they would have prefered
 * $NDE = P(Y_{M = m} = 1|do(X = 1)) - P(Y_{M = m} = 1|do(X = 0))$
-
